@@ -1,0 +1,29 @@
+Fixed Asset Document Manager Guide
+
+1. Overview
+
+Rayda’s Document Manager stores and organizes all documents linked to
+company assets.
+
+2. Key Features
+
+-   Upload storage
+-   Version history
+-   Expiry reminders
+-   Asset‑linked document assignments
+
+3. Uploading Documents
+
+1.  Go to the device profile.
+2.  Select “Upload Document.”
+3.  Choose type (invoice, warranty, maintenance record).
+4.  Set expiry date if applicable.
+
+4. Versioning
+
+Each update creates a new version while preserving historical records.
+
+5. Expiry Management
+
+Rayda sends automated notifications 30, 7, and 1 day before a document
+expires.

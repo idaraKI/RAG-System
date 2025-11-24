@@ -1,0 +1,28 @@
+Device Lifecycle Management Report
+
+1. Introduction
+
+This report summarizes asset distribution, usage, retrieval, and
+end‑of‑life handling.
+
+2. Lifecycle Stages
+
+-   Procurement
+-   Assignment
+-   Usage & Monitoring
+-   Retrieval
+-   Storage
+-   Redeployment or Recycling
+
+3. Key Metrics
+
+-   Total active devices
+-   Devices overdue for return
+-   Retrieval success rate
+-   Cost of replacements
+-   Refurbishment vs. disposal ratio
+
+4. Insights
+
+Most retrieval delays occur during remote offboarding. Recommendation:
+automate reminders and enforce stricter deadlines.

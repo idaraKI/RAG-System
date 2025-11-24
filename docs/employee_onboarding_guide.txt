@@ -1,0 +1,27 @@
+Employee Device Onboarding Guide
+
+1. Welcome
+
+This guide helps new employees set up their company‑issued devices.
+
+2. What You Receive
+
+-   Laptop
+-   Charger
+-   Optional monitor and accessories
+-   Quick start instructions
+
+3. First‑Time Setup
+
+1.  Power on and connect to WiFi.
+2.  Log in using your company email.
+3.  Complete security setup (MFA, password, device encryption).
+
+4. Support
+
+For issues, contact IT through the service desk.
+
+5. Responsibilities
+
+Employees must maintain the device, report issues promptly, and follow
+security protocols.

@@ -1,0 +1,43 @@
+Device Procurement Policy
+
+1. Purpose
+
+This policy defines the process for sourcing, approving, and delivering
+devices to employees across global locations.
+
+2. Scope
+
+Applies to all company–issued laptops, monitors, peripherals, and mobile
+devices.
+
+3. Procurement Process
+
+3.1 Device Requests
+
+Employees submit requests through the internal IT portal, specifying
+role requirements and justification.
+
+3.2 Approval Workflow
+
+IT validates technical requirements. Finance reviews and approves
+budget.
+
+3.3 Ordering
+
+Approved devices are procured through approved vendors. All devices are
+asset‑tagged and registered in the Rayda system.
+
+3.4 Delivery
+
+Devices are shipped using Rayda’s logistics partners and tracked until
+successful delivery.
+
+4. Documentation
+
+Invoices, warranties, and ownership documents must be uploaded to
+Rayda’s Fixed Asset Document Manager.
+
+5. Risk Management
+
+Lost or damaged devices must be reported within 24 hours. Devices
+reaching EOL are wiped and recycled responsibly.

@@ -1,0 +1,36 @@
+Device Return & Retrieval Policy
+
+1. Purpose
+
+This policy outlines how company devices must be returned during
+offboarding, contract completion, or device replacement.
+
+2. Return Scenarios
+
+-   Employee resignation or termination
+-   Device upgrade
+-   Device malfunction requiring replacement
+
+3. Return Process
+
+3.1 Notification
+
+HR triggers a device return workflow. The employee receives packaging
+and pickup instructions.
+
+3.2 Secure Data Wipe
+
+IT performs remote wipe or guides the employee through secure data
+removal.
+
+3.3 Pickup & Logistics
+
+Rayda coordinates courier pickup, tracking, and return confirmation.
+
+4. Non‑Compliance
+
+Unreturned devices may incur fees or deductions as per HR policy.
+
+5. Condition Check
+
+Returned devices undergo inspection, refurbishing, or recycling.
