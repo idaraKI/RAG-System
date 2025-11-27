@@ -1,5 +1,6 @@
 import os
-from langchain_community.document_loaders import TextLoader, DirectoryLoader
+from langchain_community.document_loaders.text import TextLoader
+from langchain_community.document_loaders.directory import DirectoryLoader
 from langchain_text_splitters import CharacterTextSplitter
 from langchain_openai import OpenAIEmbeddings
 from langchain_chroma import Chroma
