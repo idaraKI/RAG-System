@@ -1,21 +1,7 @@
-# Core
-streamlit==1.26.0
-python-dotenv==1.0.1
-
-# LangChain packages
-langchain-chroma==1.0.0
-langchain-core==1.0.7
-langchain-openai==1.1.0
-langchain-community==0.0.227
-
-# ChromaDB
-chromadb==0.4.24
-
-# OpenAI embeddings
-openai==1.35.0
-
-# Utilities
-numpy==2.3.5
-requests==2.32.5
-tqdm==4.67.1
-
+streamlit
+python-dotenv
+langchain
+langchain-openai
+langchain-community
+langchain-chroma
+chromadb
