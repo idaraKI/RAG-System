@@ -6,6 +6,11 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+openai_api_key = st.secrets["OPENAI_API_KEY"]
+if not openai_api_key:
+    st.error("OpenAI API key not found. Add it in Streamlit Secrets or in a local .env file.")
+    st.stop()
+
 # --- Load Vector Store ---
 PERSIST_DIR = "db/chroma_db"
 
