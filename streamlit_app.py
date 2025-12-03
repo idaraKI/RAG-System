@@ -50,6 +50,9 @@ if st.button("Submit"):
 Documents:
 {chr(10).join([f"- {doc.page_content}" for doc in relevant_docs])}
 
+Guidelines:
+-If the answer is not present in the documents, reply: "I currently do not have that information. I can help you with other questions related to Rayda's internal documents."
+
 # Guidelines:
 # - Use only the information from the documents above.
 # - If the answer is not present in the documents, reply: "I don't know."
