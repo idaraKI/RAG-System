@@ -50,10 +50,10 @@ if st.button("Submit"):
 Documents:
 {chr(10).join([f"- {doc.page_content}" for doc in relevant_docs])}
 
-Guidelines:
-- Use only the information from the documents above.
-- If the answer is not present in the documents, reply: "I don't know."
-"""
+# Guidelines:
+# - Use only the information from the documents above.
+# - If the answer is not present in the documents, reply: "I don't know."
+# """
 
         # Run model
         model = ChatOpenAI(model="gpt-4o")
