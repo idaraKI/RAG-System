@@ -18,7 +18,7 @@ db = Chroma(
 
 query = "What is Rayda's device procurement process?"
 
-retriever = db.as_retriever(search_kwargs={"k": 3,})
+retriever = db.as_retriever(search_kwargs={"k": 2,})
 
 relevant_docs = retriever.invoke(query)
 
@@ -34,12 +34,12 @@ combined_input = f"""Based on the following documents,please answer this questio
 Documents:
 {chr(10).join([f"- {doc.page_content}" for doc in relevant_docs])}
 
-Please provide a clear, concise, and accurate answer using only the information from the documents above.If the answer is not contained within the documents, respond with "I don't know."."""
+Please provide a clear, concise, and accurate answer using only the information from the documents above.If the answer is not contained within the documents, respond with "I currently do not have that information, i can escalate the issue to my superior."."""
 
 model = ChatOpenAI(model="gpt-4o")
 
 messages = [
-    SystemMessage(content="You are a helpful assistant"),
+    SystemMessage(content="You are a Rayda internal knowledge assistant"),
     HumanMessage(content=combined_input),
 ]
 

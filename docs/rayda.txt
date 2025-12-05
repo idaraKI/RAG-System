@@ -1,0 +1,49 @@
+RAYDA - COMPREHENSIVE COMPANY DATA (COMBINED REPORT)
+
+Overview:
+Rayda is a global remote device lifecycle management platform that enables companies to procure, configure, deploy, track, retrieve, and recycle IT equipment for remote and distributed teams. Its services support organizations hiring across more than 170 countries, focusing on simplifying logistics and device management challenges, especially in emerging markets.
+
+Mission:
+Rayda aims to eliminate barriers to global talent by delivering seamless device distribution and lifecycle management. The company focuses on empowering organizations to operate globally without needing to build local logistics or IT procurement systems.
+
+History & Background:
+Founded in 2022, Rayda operates within the device lifecycle management, IT procurement, and asset operations industry. Though incorporated in Wilmington, Delaware, Rayda operates as a global company, serving clients across multiple continents. The platform was built to solve a major gap in remote work infrastructure—providing reliable device management for companies with globally distributed employees.
+
+Core Services:
+
+1. Device Procurement & Configuration
+- Helps companies source laptops, peripherals, and IT devices from local or global suppliers.
+- Devices can be prepared and configured before shipping.
+
+2. Global Delivery & Logistics
+- Delivers devices to remote employees across 170+ countries.
+- Manages customs, shipping delays, documentation, and end-to-end delivery tracking.
+- Offers device protection and insurance options.
+
+3. Asset & Inventory Management
+- Centralized dashboard for complete IT asset tracking.
+- Stores warranty files, receipts, invoices, insurance documents, and status histories.
+- Provides visibility into device location, user assignments, and lifecycle stage.
+
+4. Onboarding/Offboarding Management
+- Handles device delivery for new hires and retrieval for departing employees.
+- Provides secure data wiping and compliance-focused handling of returned devices.
+- Supports refurbished redeployment, storage, or environmentally responsible recycling.
+
+5. Lifecycle Maintenance & Compliance
+- Ensures devices remain updated, secure, and compliant with industry standards.
+- Supports planned refresh cycles, upgrades, and long-term device lifecycle planning.
+
+6. Scalability for Global Teams
+- Built for companies with remote or hybrid teams spread across multiple countries.
+- Especially focused on emerging markets where logistics and customs can be challenging.
+- Eliminates the need for internal procurement teams to solve cross-border operations.
+
+Business Model:
+Rayda uses a mixed subscription + transaction model. Companies can pay per delivery, retrieval, storage, or procurement action, or subscribe for recurring global hiring support. This model supports startups, growing teams, and large enterprises.
+
+Public Mentions:
+Media and tech outlets describe Rayda as a blend of procurement marketplace, logistics engine, and IT operations system. It has been highlighted for helping companies streamline IT distribution and manage global compliance.
+
+Summary:
+Rayda provides a complete infrastructure for device lifecycle management for globally distributed teams. From procurement to end-of-life recycling, the platform simplifies the logistics and compliance burdens companies face when managing remote workers worldwide.

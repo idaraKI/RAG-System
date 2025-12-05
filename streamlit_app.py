@@ -1,4 +1,3 @@
-import os
 import streamlit as st
 from langchain_chroma import Chroma
 from langchain_openai import OpenAIEmbeddings, ChatOpenAI
@@ -32,7 +31,7 @@ if st.button("Submit"):
         st.error("Please enter a question.")
     else:
         # Retrieve documents
-        retriever = db.as_retriever(search_kwargs={"k": 3})
+        retriever = db.as_retriever(search_kwargs={"k": 2})
         relevant_docs = retriever.invoke(query)
 
         # Display retrieved context
@@ -45,13 +44,35 @@ if st.button("Submit"):
                     st.write(doc.page_content)
 
         # Build LLM input
-        combined_input = f"""Based on the following documents, answer this question: {query}
+        combined_input = f"""You are a helpful assistant supporting Rayda.
+
+### RULES ABOUT KNOWLEDGE USE
+1. **If the user's question is about Rayda, its processes, policies, operations, or anything internal**, 
+   ONLY use the Rayda documents provided below.
+
+2. **If the documents do not contain the answer:**
+   Respond exactly with:
+   "I currently do not have that information in the company documents."
+
+3. **If the user's question is general (NOT Rayda-specific):**
+   You may answer using your own general knowledge.
+
+4. **Never invent or guess details about Rayda that are not in the documents.**
+
+5. Your tone should be professional, friendly, and conversational.
+
+### USER QUESTION:
+{query}
 
 Documents:
 {chr(10).join([f"- {doc.page_content}" for doc in relevant_docs])}
 
 Guidelines:
--If the answer is not present in the documents, reply: "I currently do not have that information. I can help you with other questions related to Rayda's internal documents."
+- First determine whether the question is Rayda-related or general.
+- If Rayda-related → use ONLY the documents.
+- If not Rayda-related → answer normally.
+- If documents lack the answer → give the fallback message above.
+"""
 
 # Guidelines:
 # - Use only the information from the documents above.
