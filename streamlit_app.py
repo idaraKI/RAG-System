@@ -54,8 +54,8 @@ if st.button("Submit"):
 #    Respond exactly with:
 #    "I currently do not have that information in the company documents."
 
-3. **If the user's question is general (NOT Rayda-specific):**
-   You may answer using your own general knowledge.
+# 3. **If the user's question is general (NOT Rayda-specific):**
+#    You may answer using your own general knowledge.
 
 4. **Never invent or guess details about Rayda that are not in the documents.**
 
