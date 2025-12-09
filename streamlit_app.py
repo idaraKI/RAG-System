@@ -8,6 +8,8 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+st.write("Working directory:", os.getcwd())
+st.write("Docs directory listing:", os.listdir("docs"))
 
 # --- Load Vector Store ---
 PERSIST_DIR = "db/chroma_db"
