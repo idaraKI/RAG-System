@@ -71,10 +71,7 @@ if st.button("Submit"):
 
 5. Your tone should be professional, friendly, and conversational.
 
-6. Match the user's question with document content even if the wording is different.
-
-7. Do not assume knowledge outside the documents for Rayda-related questions.
-
+6. Even if the user phrases the question differently from the document wording, try to understand the meaning and find relevant content.
 
 ### USER QUESTION:
 {query}
