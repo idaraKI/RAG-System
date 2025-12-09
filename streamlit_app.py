@@ -61,14 +61,13 @@ if st.button("Submit"):
 1. **If the user's question is about Rayda, its processes, policies, operations, or anything internal**, 
    ONLY use the Rayda documents provided below.
 
-2. **If the documents do not contain the answer:**
-   Respond exactly with:
-   "I currently do not have that information in the company documents."
+2. **If the documents do not contain the answer,respond politely without guessing.Use a friendly message like**
+    "I don't have enough information from the documents to answer that question. but i can help with anything else.
 
-3. **If the user's question is general (NOT Rayda-specific):**
+3. **If the user's question is general :**
    You may answer using your own general knowledge.
 
-4. **Never invent or guess details about Rayda that are not in the documents.**
+4. **Never invent or guess details about Rayda.**
 
 5. Your tone should be professional, friendly, and conversational.
 
