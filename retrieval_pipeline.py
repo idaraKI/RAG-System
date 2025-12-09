@@ -18,7 +18,7 @@ db = Chroma(
 
 query = "what is Rayda's device procurement process?"
 
-retriever = db.as_retriever(search_kwargs={"k": 2,})
+retriever = db.as_retriever(search_kwargs={"k": 5,})
 
 relevant_docs = retriever.invoke(query)
 

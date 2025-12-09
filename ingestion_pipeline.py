@@ -37,7 +37,7 @@ def load_documents(docs_path = "docs"):
     return documents
         
 
-def split_documents(documents, chunk_size=500, chunk_overlap=0):
+def split_documents(documents, chunk_size=500, chunk_overlap=100):
     """Split documents into smaller chunks with overlap."""
     print("Splitting documents into chunks...")
     
