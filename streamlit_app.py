@@ -1,4 +1,6 @@
 import streamlit as st
+import os
+from ingestion_pipeline import main as ingest
 from langchain_chroma import Chroma
 from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 from langchain_core.messages import HumanMessage, SystemMessage
@@ -9,6 +11,12 @@ load_dotenv()
 
 # --- Load Vector Store ---
 PERSIST_DIR = "db/chroma_db"
+
+# --- making sure that the ingestion_pipeline runs if the chroma db is not available ---
+if not os.path.exists(PERSIST_DIR):
+    st.warning("Vectorstore not found. Creating embeddings...")
+    ingest()
+    st.success("Vectorstore created!")
 
 embedding_model = OpenAIEmbeddings(model="text-embedding-3-small")
 db = Chroma(
