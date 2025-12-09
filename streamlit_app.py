@@ -42,7 +42,7 @@ if st.button("Submit"):
         st.error("Please enter a question.")
     else:
         # Retrieve documents
-        retriever = db.as_retriever(search_kwargs={"k": 2})
+        retriever = db.as_retriever(search_kwargs={"k": 5})
         relevant_docs = retriever.invoke(query)
 
         # Display retrieved context
