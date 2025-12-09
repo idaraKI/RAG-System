@@ -79,7 +79,7 @@ Documents:
 
 Guidelines:
 - First determine whether the question is Rayda-related or general.
-- If Rayda-related → use ONLY the documents.
+# - If Rayda-related → use ONLY the documents.
 - If not Rayda-related → answer normally.
 - If documents lack the answer → give the fallback message above.
 """
