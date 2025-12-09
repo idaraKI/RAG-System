@@ -16,7 +16,7 @@ db = Chroma(
     collection_metadata={"hnsw:space": "cosine"},
 )
 
-query = "What is Rayda's device procurement process?"
+query = "what is Rayda's device procurement process?"
 
 retriever = db.as_retriever(search_kwargs={"k": 2,})
 
