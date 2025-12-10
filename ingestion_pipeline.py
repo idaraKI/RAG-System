@@ -14,7 +14,9 @@ def load_documents(docs_path = "docs"):
     print(f"Loading documents from {docs_path}...")
     
     if not os.path.exists(docs_path):
-        raise FileNotFoundError(f"The directory {docs_path} does not exist.Please create it and add your company files.")
+        raise FileNotFoundError(
+            f"The directory {docs_path} does not exist. Please create it and add your company files."
+        )
 
     loader = DirectoryLoader(
         path=docs_path,
@@ -25,7 +27,7 @@ def load_documents(docs_path = "docs"):
     documents = loader.load()
  
     if len(documents) == 0:
-        raise FileNotFoundError(f"No .txt files found in the directory {docs_path}. Please add your company documents.")
+        raise FileNotFoundError(f"No .txt files found in the directory {docs_path}.")
     
     for i, doc in enumerate(documents[:2]):
         print(f"\nDocument {i+1}:")
@@ -91,6 +93,15 @@ def main():
     chunks = split_documents(documents)
 
     vectorstore = create_vector_store(chunks)
+
+def run_ingestion_pipeline():
+    print("Running ingestion pipeline...")
+
+    documents = load_documents("docs")
+    chunks = split_documents(documents)
+    create_vector_store(chunks)
+
+    print("Ingestion completed successfully!")
     
 
 if __name__ == "__main__":
