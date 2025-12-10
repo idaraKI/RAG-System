@@ -8,6 +8,8 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+DOCS_PATH = "docs"
+PERSIST_DIR = "db/chroma_db"
 
 def load_documents(docs_path = "docs"):
     """Load all text files from the docs directory."""
@@ -39,7 +41,7 @@ def load_documents(docs_path = "docs"):
     return documents
         
 
-def split_documents(documents, chunk_size=500, chunk_overlap=100):
+def split_documents(documents, chunk_size=1000, chunk_overlap=100):
     """Split documents into smaller chunks with overlap."""
     print("Splitting documents into chunks...")
     
@@ -52,7 +54,7 @@ def split_documents(documents, chunk_size=500, chunk_overlap=100):
     
     if chunks:
 
-        for i, chunk in enumerate(chunks[:5]):
+        for i, chunk in enumerate(chunks[:7]):
             print(f"\n--- Chunk {i+1} ---")
             print(f"source: {chunk.metadata['source']}")
             print(f"Length: {len(chunk.page_content)} characters")
@@ -60,7 +62,7 @@ def split_documents(documents, chunk_size=500, chunk_overlap=100):
             print(chunk.page_content)
             print("-" * 50)
 
-        if len(chunks) > 5:
+        if len(chunks) > 7:
             print(f"\n... and {len(chunks) - 5} more chunks.")
 
     return chunks
@@ -85,24 +87,16 @@ def create_vector_store(chunks, persist_directory="db/chroma_db"):
 
     return vector_store
 
-def main():
-    print("Starting ingestion pipeline...")
-    
-    documents = load_documents(docs_path="docs")
-
-    chunks = split_documents(documents)
-
-    vectorstore = create_vector_store(chunks)
-
 def run_ingestion_pipeline():
-    print("Running ingestion pipeline...")
-
+    """Full ingestion pipeline: load, split, and create vector store."""
+    print("🔄 Running ingestion pipeline...")
     documents = load_documents("docs")
     chunks = split_documents(documents)
     create_vector_store(chunks)
+    print("✅ Ingestion pipeline completed successfully.")
 
-    print("Ingestion completed successfully!")
-    
+
+       
 
 if __name__ == "__main__":
-    main()
+    run_ingestion_pipeline()
