@@ -15,10 +15,6 @@ if not os.path.exists(PERSIST_DIR) or not os.listdir(PERSIST_DIR):
     st.success("Ingestion completed!")
 
 
-# --- Load Vector Store ---
-PERSIST_DIR = "db/chroma_db"
-
-
 embedding_model = OpenAIEmbeddings(model="text-embedding-3-small")
 db = Chroma(
     persist_directory=PERSIST_DIR,
