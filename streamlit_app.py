@@ -41,7 +41,7 @@ for message in st.session_state.messages:
         st.write(message["content"])
 
 # --- Sample questions ---
-st.markdown("###  You can ask questions like:")
+st.markdown("###  Sample questions :")
 st.markdown("""
 - Why should I use Rayda?
 - What is Rayda’s device procurement process?
