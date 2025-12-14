@@ -40,6 +40,18 @@ for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.write(message["content"])
 
+# --- Sample questions ---
+st.markdown("###  You can ask questions like:")
+st.markdown("""
+- Why should I use Rayda?
+- What is Rayda’s device procurement process?
+- How does Rayda manage company assets?
+- What documents are stored in the Fixed Asset Document Manager?
+- How are devices approved and delivered at Rayda?
+- What happens to devices at end of life?
+""")
+
+
 # --- Chat Input ---
 user_query = st.chat_input("Ask a question about Rayda...")
 
@@ -96,9 +108,9 @@ Guidelines:
 
     with st.spinner("Generating answer..."):
         response = model.invoke(messages)
-
-    st.chat_message("RAG Answer")
-    st.write(response.content)
+    
+    with st.chat_message("assistant"):
+        st.write(response.content)
 
     # store assistant response in session state for chat history
     st.session_state.messages.append({"role": "assistant", "content": response.content})
