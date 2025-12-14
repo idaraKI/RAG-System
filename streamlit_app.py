@@ -8,13 +8,19 @@ from ingestion_pipeline import run_ingestion_pipeline, PERSIST_DIR
 
 load_dotenv()
 
+
+# Streamlit UI 
+st.set_page_config(page_title="Rayda RAG System", layout="wide")
+st.title("Rayda RAG System")
+st.write("Ask any question based on Rayda's internal documents.")
+
 # --- Auto-run ingestion pipeline if vector store is missing ---
 if not os.path.exists(PERSIST_DIR) or not os.listdir(PERSIST_DIR):
     st.info("No vector store found. Running ingestion pipeline...")
     run_ingestion_pipeline()
     st.success("Ingestion completed!")
 
-
+# --- Load vector store ---
 embedding_model = OpenAIEmbeddings(model="text-embedding-3-small")
 db = Chroma(
     persist_directory=PERSIST_DIR,
@@ -22,40 +28,41 @@ db = Chroma(
     collection_metadata={"hnsw:space": "cosine"},
 )
 
+retriever = db.as_retriever(search_kwargs={"k": 7})
 
-# Streamlit UI 
-st.set_page_config(page_title="Rayda RAG System", layout="wide")
-st.title("Rayda RAG System")
-st.write("Ask any question based on Rayda's internal documents.")
+# --- Session State (Chat Memory) ---
 
-# Input field
-query = st.text_input("Enter your question:", "")
+if "messages" not in st.session_state:
+    st.session_state.messages = []
 
-if st.button("Submit"):
-    if not query.strip():
-        st.error("Please enter a question.")
-    else:
-        # Retrieve documents
-        retriever = db.as_retriever(search_kwargs={"k": 7})
-        relevant_docs = retriever.invoke(query)
+# --- Display previous chat messages ---
+for message in st.session_state.messages:
+    with st.chat_message(message["role"]):
+        st.write(message["content"])
 
-        # Display retrieved context
-        st.subheader("Retrieved Context")
-        if len(relevant_docs) == 0:
-            st.warning("No relevant documents found.")
-        else:
-            for i, doc in enumerate(relevant_docs, 1):
-                with st.expander(f"Document {i}"):
-                    st.write(doc.page_content)
+# --- Chat Input ---
+user_query = st.chat_input("Ask a question about Rayda...")
 
-        # Build LLM input
-        combined_input = f"""You are a helpful assistant supporting Rayda.
+if user_query:
+    # --- Store user message ---
+    st.session_state.messages.append(
+        {"role": "user", "content": user_query}
+    )
+
+    with st.chat_message("user"):
+        st.write(user_query)
+
+# --- Retrieve documents ---
+    relevant_docs = retriever.invoke(user_query)
+
+    # --- Build LLM input ---
+    combined_input = f"""You are a helpful assistant supporting Rayda.
 
 ### RULES ABOUT KNOWLEDGE USE
 1. **If the user's question is about Rayda, its processes, policies, operations, or anything internal**, 
    ONLY use the Rayda documents provided below.
 
-2. **If the documents do not contain the answer,respond politely without guessing.Use a friendly message **
+2. **If the documents do not contain the answer, respond politely without guessing. Use a friendly message.**
     
 
 3. **If the user's question is general :**
@@ -68,7 +75,7 @@ if st.button("Submit"):
 6. Even if the user phrases the question differently from the document wording, try to understand the meaning and find relevant content.
 
 ### USER QUESTION:
-{query}
+{user_query}
 
 Documents:
 {chr(10).join([f"- {doc.page_content}" for doc in relevant_docs])}
@@ -80,20 +87,18 @@ Guidelines:
 - If documents lack the answer → give the fallback message above.
 """
 
-# Guidelines:
-# - Use only the information from the documents above.
-# - If the answer is not present in the documents, reply: "I don't know."
-# """
+    # Run model
+    model = ChatOpenAI(model="gpt-4o")
+    messages = [
+        SystemMessage(content="You are a helpful assistant."),
+        HumanMessage(content=combined_input),
+    ]
 
-        # Run model
-        model = ChatOpenAI(model="gpt-4o")
-        messages = [
-            SystemMessage(content="You are a helpful assistant."),
-            HumanMessage(content=combined_input),
-        ]
+    with st.spinner("Generating answer..."):
+        response = model.invoke(messages)
 
-        with st.spinner("Generating answer..."):
-            response = model.invoke(messages)
+    st.chat_message("RAG Answer")
+    st.write(response.content)
 
-        st.subheader("RAG Answer")
-        st.write(response.content)
+    # store assistant response in session state for chat history
+    st.session_state.messages.append({"role": "assistant", "content": response.content})
