@@ -11,7 +11,7 @@ load_dotenv()
 
 # Streamlit UI 
 st.set_page_config(page_title="Rayda RAG System", layout="wide")
-st.image("assets/rayda_logo.png", width=140)
+st.image("assets/rayda_logo.png", width=60)
 st.title("Rayda RAG System")
 st.write("Ask any question based on Rayda's internal documents.")
 
@@ -36,13 +36,11 @@ retriever = db.as_retriever(search_kwargs={"k": 7})
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-if "query" not in st.session_state:
-    st.session_state.query = ""
-
-if "last_selected_question" not in st.session_state:
-    st.session_state.last_selected_question = None
+if "prefill_input" not in st.session_state:
+    st.session_state.prefill_input = ""
 
 # --- Side bar ---
+st.sidebar.image("assets/rayda_logo.png", width=60)
 st.sidebar.title("Sample Questions")
 sample_questions = [
     "Why should I use Rayda?",
@@ -58,9 +56,9 @@ selected_question = st.sidebar.radio(
     sample_questions
 )
 
-if selected_question != st.session_state.last_selected_question:
-    st.session_state.query = selected_question
-    st.session_state.last_selected_question = selected_question
+# --- Add a button to fill the input with a sample question without auto-sending ---
+if st.sidebar.button("Use this sample question"):
+    st.session_state.prefill_input = selected_question
 
 # --- Display previous chat messages ---
 for message in st.session_state.messages:
@@ -71,15 +69,21 @@ for message in st.session_state.messages:
 # --- Chat Input ---
 user_query = st.chat_input(
     "Ask a question about Rayda...",
-    key="query"
+    key="user_input"
 )
 
+# If user_query is empty, use the prefilled input from the sample question
+if not user_query and st.session_state.prefill_input:
+    user_query = st.session_state.prefill_input
+    # Clear the prefill so it doesn't keep triggering
+    st.session_state.prefill_input = ""
+
+# --- Run query only when user submits ---
 if user_query:
     # --- Store user message ---
     st.session_state.messages.append(
         {"role": "user", "content": user_query}
     )
-    st.session_state.query = ""
     with st.chat_message("user"):
         st.write(user_query)
 
