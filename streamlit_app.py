@@ -11,6 +11,7 @@ load_dotenv()
 
 # Streamlit UI 
 st.set_page_config(page_title="Rayda RAG System", layout="wide")
+st.image("assets/rayda_logo.png", width=140)
 st.title("Rayda RAG System")
 st.write("Ask any question based on Rayda's internal documents.")
 
@@ -35,32 +36,50 @@ retriever = db.as_retriever(search_kwargs={"k": 7})
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
+if "query" not in st.session_state:
+    st.session_state.query = ""
+
+if "last_selected_question" not in st.session_state:
+    st.session_state.last_selected_question = None
+
+# --- Side bar ---
+st.sidebar.title("Sample Questions")
+sample_questions = [
+    "Why should I use Rayda?",
+    "What is Rayda’s device procurement process?",
+    "How does Rayda manage company assets?",
+    "What documents are stored in the Fixed Asset Document Manager?",
+    "How are devices approved and delivered at Rayda?",
+    "What happens to devices at end of life?"
+]
+
+selected_question = st.sidebar.radio(
+    "Try one of these:",
+    sample_questions
+)
+
+if selected_question != st.session_state.last_selected_question:
+    st.session_state.query = selected_question
+    st.session_state.last_selected_question = selected_question
+
 # --- Display previous chat messages ---
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.write(message["content"])
 
-# --- Sample questions ---
-st.markdown("### You can ask questions like :")
-st.markdown("""
-- Why should I use Rayda?
-- What is Rayda’s device procurement process?
-- How does Rayda manage company assets?
-- What documents are stored in the Fixed Asset Document Manager?
-- How are devices approved and delivered at Rayda?
-- What happens to devices at end of life?
-""")
-
 
 # --- Chat Input ---
-user_query = st.chat_input("Ask a question about Rayda...")
+user_query = st.chat_input(
+    "Ask a question about Rayda...",
+    key="query"
+)
 
 if user_query:
     # --- Store user message ---
     st.session_state.messages.append(
         {"role": "user", "content": user_query}
     )
-
+    st.session_state.query = ""
     with st.chat_message("user"):
         st.write(user_query)
 
