@@ -30,18 +30,11 @@ db = Chroma(
     collection_metadata={"hnsw:space": "cosine"},
 )
 
+retriever = db.as_retriever(search_kwargs={"k": 7})
+
  # --- DuckDuckGo Search ---
 duckduckgo_search = DuckDuckGoSearchAPIWrapper()
 
-def needs_web_search(query: str) -> bool:
-    keywords = [
-        "latest", "recent", "news", "today",
-        "current", "update", "trend", "regulation"
-    ]
-    return any(word in query.lower() for word in keywords)
-
-
-retriever = db.as_retriever(search_kwargs={"k": 7})
 
 # --- Session State (Chat Memory) ---
 
@@ -99,18 +92,48 @@ if user_query:
     with st.chat_message("user"):
         st.write(user_query)
 
-# --- Retrieval Logic (Internal vs Web) ---
-    use_web = needs_web_search(user_query)
+ # --- Step 1: Check internal documents ---
+    docs = retriever.invoke(user_query)
+    documents = [doc.page_content for doc in docs] if docs else []
 
+    use_web = False
+    web_sources = []
+
+    # --- Step 2: LLM-based Router ---
+    if not documents:  # Only use web search if no internal documents
+        router_prompt = f"""
+Decide if this question needs external web search:
+'{user_query}'
+
+Answer ONLY YES or NO.
+"""
+        router_model = ChatOpenAI(model="gpt-4o")
+        router_response = router_model.invoke([
+            SystemMessage(content="You are a router deciding if web search is needed."),
+            HumanMessage(content=router_prompt)
+        ])
+        use_web = router_response.content.strip().upper() == "YES"
+
+ # --- Step 3: Web Search if needed ---
     if use_web:
         st.info("Searching the web using DuckDuckGo...")
-        web_results = duckduckgo_search.run(user_query)
-        documents = web_results.split("\n")
+        web_results = duckduckgo_search.run(user_query, num_results=5)
+        # DuckDuckGo API returns "text (url)" format; split into text and citation
+        documents = []
+        web_sources = []
+        for r in web_results.split("\n"):
+            if "(" in r and r.endswith(")"):
+                # Extract URL as citation
+                content, url = r.rsplit("(", 1)
+                url = url.rstrip(")")
+                documents.append(content.strip())
+                web_sources.append(url)
+            else:
+                documents.append(r.strip())
         source_type = "public web sources"
     else:
-        docs = retriever.invoke(user_query)
-        documents = [doc.page_content for doc in docs]
         source_type = "Rayda internal documents"
+
 
     # --- Build LLM input ---
     combined_input = f"""You are a helpful assistant supporting Rayda.
