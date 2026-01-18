@@ -138,7 +138,7 @@ SOURCE:
 {source_type}
 
 Documents:
-{chr(10).join([f"- {doc.page_content}" for doc in documents])}
+{chr(10).join([f"- {doc}" for doc in documents])}
 
 Guidelines:
 - First determine whether the question is Rayda-related or general.
