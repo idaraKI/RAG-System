@@ -4,6 +4,7 @@ from langchain_chroma import Chroma
 from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 from langchain_core.messages import HumanMessage, SystemMessage
 from dotenv import load_dotenv
+from langchain_community.utilities import DuckDuckGoSearchAPIWrapper
 from ingestion_pipeline import run_ingestion_pipeline, PERSIST_DIR
 
 load_dotenv()
@@ -28,6 +29,17 @@ db = Chroma(
     embedding_function=embedding_model,
     collection_metadata={"hnsw:space": "cosine"},
 )
+
+ # --- DuckDuckGo Search ---
+duckduckgo_search = DuckDuckGoSearchAPIWrapper()
+
+def needs_web_search(query: str) -> bool:
+    keywords = [
+        "latest", "recent", "news", "today",
+        "current", "update", "trend", "regulation"
+    ]
+    return any(word in query.lower() for word in keywords)
+
 
 retriever = db.as_retriever(search_kwargs={"k": 7})
 
@@ -87,8 +99,18 @@ if user_query:
     with st.chat_message("user"):
         st.write(user_query)
 
-# --- Retrieve documents ---
-    relevant_docs = retriever.invoke(user_query)
+# --- Retrieval Logic (Internal vs Web) ---
+    use_web = needs_web_search(user_query)
+
+    if use_web:
+        st.info("Searching the web using DuckDuckGo...")
+        web_results = duckduckgo_search.run(user_query)
+        documents = web_results.split("\n")
+        source_type = "public web sources"
+    else:
+        docs = retriever.invoke(user_query)
+        documents = [doc.page_content for doc in docs]
+        source_type = "Rayda internal documents"
 
     # --- Build LLM input ---
     combined_input = f"""You are a helpful assistant supporting Rayda.
@@ -111,6 +133,9 @@ if user_query:
 
 ### USER QUESTION:
 {user_query}
+
+SOURCE:
+{source_type}
 
 Documents:
 {chr(10).join([f"- {doc.page_content}" for doc in relevant_docs])}
