@@ -56,7 +56,7 @@ st.sidebar.image("assets/rayda_logo.png", width=60)
 st.sidebar.title("Sample Questions")
 sample_questions = [
     "Why should I use Rayda?",
-    "What is Rayda’s device procurement process?",
+    "What is Rayda's device procurement process?",
     "How does Rayda manage company assets?",
     "What documents are stored in the Fixed Asset Document Manager?",
     "How are devices approved and delivered at Rayda?",
@@ -138,7 +138,7 @@ SOURCE:
 {source_type}
 
 Documents:
-{chr(10).join([f"- {doc.page_content}" for doc in relevant_docs])}
+{chr(10).join([f"- {doc.page_content}" for doc in documents])}
 
 Guidelines:
 - First determine whether the question is Rayda-related or general.
