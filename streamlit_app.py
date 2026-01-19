@@ -1,5 +1,4 @@
 import os
-from chromadb import Documents
 import streamlit as st
 from langchain_chroma import Chroma
 from langchain_openai import OpenAIEmbeddings, ChatOpenAI
@@ -10,53 +9,80 @@ from ingestion_pipeline import run_ingestion_pipeline, PERSIST_DIR
 
 load_dotenv()
 
+# -------------------------------
+# LLM-based intent classifier
+# -------------------------------
+def classify_query_intent(query: str) -> str:
+    """
+    Returns one of:
+    - INTERNAL
+    - PUBLIC
+    - GENERAL
+    """
+    prompt = f"""
+Classify the user's question into ONE category.
 
-# --- decide if internal docs are relevant ---
-def docs_are_relevant(documents: list[str]) -> bool:
-    """Docs are relevant if they have enough text."""
-    if not documents:
-        return False
+INTERNAL:
+- Company internal processes, policies, operations, documents
 
-    combined_text = " ".join(documents).strip()
-    return len(combined_text) >= 300
+PUBLIC:
+- Social media, follower counts, news, press, public announcements
 
-# Streamlit UI 
+GENERAL:
+- General knowledge not specific to Rayda
+
+Question:
+{query}
+
+Answer with ONLY one word:
+INTERNAL, PUBLIC, or GENERAL
+"""
+    model = ChatOpenAI(model="gpt-4o")
+    response = model.invoke([
+        SystemMessage(content="You classify user intent."),
+        HumanMessage(content=prompt),
+    ])
+    return response.content.strip().upper()
+
+
+# -------------------------------
+# Streamlit UI
+# -------------------------------
 st.set_page_config(page_title="Rayda RAG System", layout="wide")
 st.image("assets/rayda_logo.png", width=60)
 st.title("Rayda RAG System")
 st.write("Ask any question based on Rayda's internal documents.")
 
-# --- Auto-run ingestion pipeline if vector store is missing ---
+# -------------------------------
+# Vector store bootstrapping
+# -------------------------------
 if not os.path.exists(PERSIST_DIR) or not os.listdir(PERSIST_DIR):
     st.info("No vector store found. Running ingestion pipeline...")
     run_ingestion_pipeline()
     st.success("Ingestion completed!")
 
-# --- Load vector store ---
 embedding_model = OpenAIEmbeddings(model="text-embedding-3-small")
 db = Chroma(
     persist_directory=PERSIST_DIR,
     embedding_function=embedding_model,
-    collection_metadata={"hnsw:space": "cosine"},
 )
 
 retriever = db.as_retriever(search_kwargs={"k": 7})
 
- # --- DuckDuckGo Search ---
 duckduckgo_search = DuckDuckGoSearchAPIWrapper()
 
-
-# --- Session State (Chat Memory) ---
-
+# -------------------------------
+# Session state
+# -------------------------------
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-if "prefill_input" not in st.session_state:
-    st.session_state.prefill_input = ""
-
-# --- Side bar ---
+# -------------------------------
+# Sidebar
+# -------------------------------
 st.sidebar.image("assets/rayda_logo.png", width=60)
 st.sidebar.title("Sample Questions")
+
 sample_questions = [
     "Why should I use Rayda?",
     "What is Rayda's device procurement process?",
@@ -66,86 +92,65 @@ sample_questions = [
     "What happens to devices at end of life?"
 ]
 
-selected_question = st.sidebar.radio(
-    "Try one of these:",
-    sample_questions
-)
+if st.sidebar.button("Use a sample question"):
+    st.session_state["prefill"] = st.sidebar.radio(
+        "Pick one:", sample_questions
+    )
 
-# --- Add a button to fill the input with a sample question without auto-sending ---
-if st.sidebar.button("Use this sample question"):
-    st.session_state.prefill_input = selected_question
+# -------------------------------
+# Display chat history
+# -------------------------------
+for msg in st.session_state.messages:
+    with st.chat_message(msg["role"]):
+        st.write(msg["content"])
 
-# --- Display previous chat messages ---
-for message in st.session_state.messages:
-    with st.chat_message(message["role"]):
-        st.write(message["content"])
+# -------------------------------
+# Chat input
+# -------------------------------
+user_query = st.chat_input("Ask a question about Rayda...")
 
-
-# --- Chat Input ---
-user_query = st.chat_input(
-    "Ask a question about Rayda...",
-    key="user_input"
-)
-
-# If user_query is empty, use the prefilled input from the sample question
-if not user_query and st.session_state.prefill_input:
-    user_query = st.session_state.prefill_input
-    # Clear the prefill so it doesn't keep triggering
-    st.session_state.prefill_input = ""
-
-#--- Run Query ---
 if user_query:
-    # Store user message
     st.session_state.messages.append({"role": "user", "content": user_query})
     with st.chat_message("user"):
         st.write(user_query)
 
-    # Step 1: Retrieve internal docs
-    docs = retriever.invoke(user_query)
-    internal_documents = [doc.page_content for doc in docs]
+    # -------------------------------
+    # Step 1: Intent classification
+    # -------------------------------
+    intent = classify_query_intent(user_query)
 
-    # Step 2: Decide whether to search web
-    use_web = not docs_are_relevant(internal_documents)
-    web_documents = []
-    web_sources = []
+    documents = []
+    source_type = ""
 
-    # Step 3: Web search if needed
-    if use_web:
-        st.info("Searching the web ...")
+    # -------------------------------
+    # Step 2: Route by intent
+    # -------------------------------
+    if intent == "PUBLIC":
+        st.info("Searching the web using DuckDuckGo...")
         web_results = duckduckgo_search.run(user_query, num_results=5)
-        for r in web_results.split("\n"):
-            if "(" in r and r.endswith(")"):
-                 content, url = r.rsplit("(", 1)
-                 content = content.strip()
-                 web_documents.append(f"{content.strip()} [source: {url.rstrip(')')}]")
-            else:
-                web_documents.append(r.strip())
+        documents = [r.strip() for r in web_results.split("\n") if r.strip()]
         source_type = "public web sources"
-    else:
-        source_type = "Rayda internal documents"
-    
-    # Combine internal + web documents
-    all_documents = internal_documents + web_documents
 
-    # --- Build LLM input ---
+    elif intent == "INTERNAL":
+        docs = retriever.invoke(user_query)
+        documents = [doc.page_content for doc in docs]
+        source_type = "Rayda internal documents"
+
+    else:  # GENERAL
+        source_type = "general knowledge"
+
+    # -------------------------------
+    # Step 3: Build prompt
+    # -------------------------------
     combined_input = f"""
 You are a helpful assistant supporting Rayda.
 
 ### RULES ABOUT KNOWLEDGE USE
 
-1. If the user's question is about Rayda's INTERNAL operations, processes, policies, or proprietary information,
-   ONLY use Rayda internal documents.
-
-2. If the user's question is about Rayda but relates to PUBLIC information
-   (e.g. social media, news, press mentions, follower counts, public announcements),
-   you MAY use public web sources.
-
-3. If the documents and web sources do not contain the answer,
-   respond politely without guessing.
-
-4. Never invent or guess details about Rayda.
-
-5. Your tone should be professional, friendly, and conversational.
+1. If the question is INTERNAL → use ONLY Rayda internal documents.
+2. If the question is PUBLIC → you MAY use public web sources.
+3. If information is missing → say so politely.
+4. Never invent facts about Rayda.
 
 ### USER QUESTION:
 {user_query}
@@ -153,11 +158,13 @@ You are a helpful assistant supporting Rayda.
 SOURCE:
 {source_type}
 
-Documents:
-{chr(10).join([f"- {doc}" for doc in all_documents])}
+CONTENT:
+{chr(10).join([f"- {doc}" for doc in documents])}
 """
 
-    # --- Run LLM ---
+    # -------------------------------
+    # Step 4: Answer
+    # -------------------------------
     model = ChatOpenAI(model="gpt-4o")
 
     with st.spinner("Generating answer..."):
