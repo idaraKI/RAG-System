@@ -127,7 +127,7 @@ if user_query:
     # -------------------------------
     if intent == "PUBLIC":
         st.info("Searching the web using DuckDuckGo...")
-        web_results = duckduckgo_search.run(user_query, num_results=5)
+        web_results = duckduckgo_search.run(user_query)
         documents = [r.strip() for r in web_results.split("\n") if r.strip()]
         source_type = "public web sources"
 
