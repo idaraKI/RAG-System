@@ -83,60 +83,68 @@ if not user_query and st.session_state.prefill_input:
     # Clear the prefill so it doesn't keep triggering
     st.session_state.prefill_input = ""
 
-# --- Run query only when user submits ---
+# --- Relevance Check ---
+def doc_are_relevant(query: str, docs: list[str]) -> bool:
+    if not docs:
+        return False
+    
+    prompt = f"""
+Question:
+{query}
+
+Documents:
+{chr(10).join(docs)}
+
+Do these documents contain enough information to answer the question?
+Answer ONLY YES or NO.
+"""
+    model = ChatOpenAI(model="gpt-4o")
+    response = model.invoke([
+        SystemMessage(content="You evaluate document relevance."),
+        HumanMessage(content=prompt),
+    ])
+
+    return response.content.strip().upper() == "YES"
+
+# --- Run Query ---
 if user_query:
-    # --- Store user message ---
+    # Store user message
     st.session_state.messages.append(
         {"role": "user", "content": user_query}
     )
+
     with st.chat_message("user"):
         st.write(user_query)
 
- # --- Step 1: Check internal documents ---
+    # --- Step 1: Retrieve internal docs ---
     docs = retriever.invoke(user_query)
-    documents = [doc.page_content for doc in docs] if docs else []
+    documents = [doc.page_content for doc in docs]
 
-    use_web = False
+    # --- Step 2: Decide whether to use web ---
+    use_web = not docs_are_relevant(user_query, documents)
     web_sources = []
 
-    # --- Step 2: LLM-based Router ---
-    if not documents:  # Only use web search if no internal documents
-        router_prompt = f"""
-Decide if this question needs external web search:
-'{user_query}'
-
-Answer ONLY YES or NO.
-"""
-        router_model = ChatOpenAI(model="gpt-4o")
-        router_response = router_model.invoke([
-            SystemMessage(content="You are a router deciding if web search is needed."),
-            HumanMessage(content=router_prompt)
-        ])
-        use_web = router_response.content.strip().upper() == "YES"
-
- # --- Step 3: Web Search if needed ---
+    # --- Step 3: Web search if needed ---
     if use_web:
         st.info("Searching the web using DuckDuckGo...")
         web_results = duckduckgo_search.run(user_query, num_results=5)
-        # DuckDuckGo API returns "text (url)" format; split into text and citation
+
         documents = []
-        web_sources = []
         for r in web_results.split("\n"):
             if "(" in r and r.endswith(")"):
-                # Extract URL as citation
                 content, url = r.rsplit("(", 1)
-                url = url.rstrip(")")
                 documents.append(content.strip())
-                web_sources.append(url)
+                web_sources.append(url.rstrip(")"))
             else:
                 documents.append(r.strip())
+
         source_type = "public web sources"
     else:
         source_type = "Rayda internal documents"
 
-
     # --- Build LLM input ---
-    combined_input = f"""You are a helpful assistant supporting Rayda.
+    combined_input = f"""
+You are a helpful assistant supporting Rayda.
 
 ### RULES ABOUT KNOWLEDGE USE
 
@@ -154,8 +162,6 @@ Answer ONLY YES or NO.
 
 5. Your tone should be professional, friendly, and conversational.
 
-6. Even if the user phrases the question differently from the document wording, try to understand the meaning and find relevant content.
-
 ### USER QUESTION:
 {user_query}
 
@@ -164,26 +170,20 @@ SOURCE:
 
 Documents:
 {chr(10).join([f"- {doc}" for doc in documents])}
-
-Guidelines:
-- First determine whether the question is Rayda-related or general.
-# - If Rayda-related → use ONLY the documents.
-- If not Rayda-related → answer normally.
-- If documents lack the answer → give the fallback message above.
 """
 
-    # Run model
+    # --- Run LLM ---
     model = ChatOpenAI(model="gpt-4o")
-    messages = [
-        SystemMessage(content="You are a helpful assistant."),
-        HumanMessage(content=combined_input),
-    ]
 
     with st.spinner("Generating answer..."):
-        response = model.invoke(messages)
-    
+        response = model.invoke([
+            SystemMessage(content="You are a helpful assistant."),
+            HumanMessage(content=combined_input),
+        ])
+
     with st.chat_message("assistant"):
         st.write(response.content)
 
-    # store assistant response in session state for chat history
-    st.session_state.messages.append({"role": "assistant", "content": response.content})
+    st.session_state.messages.append(
+        {"role": "assistant", "content": response.content}
+    )
