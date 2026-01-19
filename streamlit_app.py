@@ -10,6 +10,20 @@ from ingestion_pipeline import run_ingestion_pipeline, PERSIST_DIR
 load_dotenv()
 
 
+# --- decide if internal docs are relevant ---
+def docs_are_relevant(query: str, documents: list[str]) -> bool:
+    """Simple heuristic: docs are relevant if they have enough text."""
+    if not documents:
+        return False
+
+    combined_text = " ".join(documents).strip()
+
+    # If docs are too short, they are probably not useful
+    if len(combined_text) < 300:
+        return False
+
+    return True
+
 # Streamlit UI 
 st.set_page_config(page_title="Rayda RAG System", layout="wide")
 st.image("assets/rayda_logo.png", width=60)
@@ -83,52 +97,22 @@ if not user_query and st.session_state.prefill_input:
     # Clear the prefill so it doesn't keep triggering
     st.session_state.prefill_input = ""
 
-# --- Relevance Check ---
-def doc_are_relevant(query: str, docs: list[str]) -> bool:
-    """
-    Returns True if internal documents look useful.
-    We treat very short or empty content as not relevant.
-    """
-    if not docs:
-        return False
-    
-    prompt = f"""
-Question:
-{query}
-
-Documents:
-{chr(10).join(docs)}
-
-Do these documents contain enough information to answer the question?
-Answer ONLY YES or NO.
-"""
-    model = ChatOpenAI(model="gpt-4o")
-    response = model.invoke([
-        SystemMessage(content="You evaluate document relevance."),
-        HumanMessage(content=prompt),
-    ])
-
-    return response.content.strip().upper() == "YES"
-
-# --- Run Query ---
+#--- Input Query ---
 if user_query:
     # Store user message
-    st.session_state.messages.append(
-        {"role": "user", "content": user_query}
-    )
-
+    st.session_state.messages.append({"role": "user", "content": user_query})
     with st.chat_message("user"):
         st.write(user_query)
 
-    # --- Step 1: Retrieve internal docs ---
+    # Step 1: Retrieve internal docs
     docs = retriever.invoke(user_query)
     documents = [doc.page_content for doc in docs]
-
-    # --- Step 2: Decide whether to use web ---
-    use_web = not docs_are_relevant(user_query, documents)
     web_sources = []
 
-    # --- Step 3: Web search if needed ---
+    # Step 2: Decide whether to search web
+    use_web = not docs_are_relevant(documents)
+
+    # Step 3: Web search if needed
     if use_web:
         st.info("Searching the web using DuckDuckGo...")
         web_results = duckduckgo_search.run(user_query, num_results=5)
@@ -141,10 +125,10 @@ if user_query:
                 web_sources.append(url.rstrip(")"))
             else:
                 documents.append(r.strip())
-
         source_type = "public web sources"
     else:
         source_type = "Rayda internal documents"
+
 
     # --- Build LLM input ---
     combined_input = f"""
