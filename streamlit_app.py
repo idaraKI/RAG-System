@@ -1,4 +1,5 @@
 import os
+from chromadb import Documents
 import streamlit as st
 from langchain_chroma import Chroma
 from langchain_openai import OpenAIEmbeddings, ChatOpenAI
@@ -12,31 +13,12 @@ load_dotenv()
 
 # --- decide if internal docs are relevant ---
 def docs_are_relevant(documents: list[str]) -> bool:
-    """Simple heuristic: docs are relevant if they have enough text."""
+    """Docs are relevant if they have enough text."""
     if not documents:
         return False
 
     combined_text = " ".join(documents).strip()
-
-    # If docs are too short, they are probably not useful
-    if len(combined_text) < 300:
-        return False
-
-    return True
-
-# --- LLM Router to check if web search is needed ---
-def needs_web_search(query: str) -> bool:
-    router_prompt = f"""
-Decide if this question requires an external web search.
-Question: {query}
-Answer ONLY YES or NO.
-"""
-    router_model = ChatOpenAI(model="gpt-4o")
-    router_response = router_model.invoke([
-        SystemMessage(content="You are a router deciding if web search is needed."),
-        HumanMessage(content=router_prompt)
-    ])
-    return router_response.content.strip().upper() == "YES"
+    return len(combined_text) >= 300
 
 # Streamlit UI 
 st.set_page_config(page_title="Rayda RAG System", layout="wide")
@@ -111,7 +93,7 @@ if not user_query and st.session_state.prefill_input:
     # Clear the prefill so it doesn't keep triggering
     st.session_state.prefill_input = ""
 
-#--- Input Query ---
+#--- Run Query ---
 if user_query:
     # Store user message
     st.session_state.messages.append({"role": "user", "content": user_query})
@@ -120,32 +102,30 @@ if user_query:
 
     # Step 1: Retrieve internal docs
     docs = retriever.invoke(user_query)
-    documents = [doc.page_content for doc in docs]
-    web_sources = []
+    internal_documents = [doc.page_content for doc in docs]
 
     # Step 2: Decide whether to search web
-    use_web = needs_web_search(user_query) if not docs_are_relevant(documents) else False
+    use_web = not docs_are_relevant(internal_documents)
+    web_documents = []
+    web_sources = []
 
     # Step 3: Web search if needed
     if use_web:
         st.info("Searching the web ...")
         web_results = duckduckgo_search.run(user_query, num_results=5)
-
-        documents = []
-        web_sources = []
-        
         for r in web_results.split("\n"):
             if "(" in r and r.endswith(")"):
                  content, url = r.rsplit("(", 1)
-            content = content.strip()
-            url = url.rstrip(")")
-            documents.append(f"{content} [source: {url}]")  # include source
-            web_sources.append(url)
-        else:
-            documents.append(r.strip())
-
-    source_type = "public web sources"
-
+                 content = content.strip()
+                 web_documents.append(f"{content.strip()} [source: {url.rstrip(')')}]")
+            else:
+                web_documents.append(r.strip())
+        source_type = "public web sources"
+    else:
+        source_type = "Rayda internal documents"
+    
+    # Combine internal + web documents
+    all_documents = internal_documents + web_documents
 
     # --- Build LLM input ---
     combined_input = f"""
@@ -153,7 +133,7 @@ You are a helpful assistant supporting Rayda.
 
 ### RULES ABOUT KNOWLEDGE USE
 
-1. If the user's question is about Rayda’s INTERNAL operations, processes, policies, or proprietary information,
+1. If the user's question is about Rayda's INTERNAL operations, processes, policies, or proprietary information,
    ONLY use Rayda internal documents.
 
 2. If the user's question is about Rayda but relates to PUBLIC information
@@ -174,7 +154,7 @@ SOURCE:
 {source_type}
 
 Documents:
-{chr(10).join([f"- {doc}" for doc in documents])}
+{chr(10).join([f"- {doc}" for doc in all_documents])}
 """
 
     # --- Run LLM ---
