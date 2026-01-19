@@ -128,20 +128,23 @@ if user_query:
 
     # Step 3: Web search if needed
     if use_web:
-        st.info("Searching the web using DuckDuckGo...")
+        st.info("Searching the web ...")
         web_results = duckduckgo_search.run(user_query, num_results=5)
 
         documents = []
+        web_sources = []
+        
         for r in web_results.split("\n"):
             if "(" in r and r.endswith(")"):
-                content, url = r.rsplit("(", 1)
-                documents.append(content.strip())
-                web_sources.append(url.rstrip(")"))
-            else:
-                documents.append(r.strip())
-        source_type = "public web sources"
-    else:
-        source_type = "Rayda internal documents"
+                 content, url = r.rsplit("(", 1)
+            content = content.strip()
+            url = url.rstrip(")")
+            documents.append(f"{content} [source: {url}]")  # include source
+            web_sources.append(url)
+        else:
+            documents.append(r.strip())
+
+    source_type = "public web sources"
 
 
     # --- Build LLM input ---
