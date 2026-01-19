@@ -85,6 +85,10 @@ if not user_query and st.session_state.prefill_input:
 
 # --- Relevance Check ---
 def doc_are_relevant(query: str, docs: list[str]) -> bool:
+    """
+    Returns True if internal documents look useful.
+    We treat very short or empty content as not relevant.
+    """
     if not docs:
         return False
     
