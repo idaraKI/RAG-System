@@ -24,6 +24,20 @@ def docs_are_relevant(documents: list[str]) -> bool:
 
     return True
 
+# --- LLM Router to check if web search is needed ---
+def needs_web_search(query: str) -> bool:
+    router_prompt = f"""
+Decide if this question requires an external web search.
+Question: {query}
+Answer ONLY YES or NO.
+"""
+    router_model = ChatOpenAI(model="gpt-4o")
+    router_response = router_model.invoke([
+        SystemMessage(content="You are a router deciding if web search is needed."),
+        HumanMessage(content=router_prompt)
+    ])
+    return router_response.content.strip().upper() == "YES"
+
 # Streamlit UI 
 st.set_page_config(page_title="Rayda RAG System", layout="wide")
 st.image("assets/rayda_logo.png", width=60)
@@ -110,7 +124,7 @@ if user_query:
     web_sources = []
 
     # Step 2: Decide whether to search web
-    use_web = not docs_are_relevant(documents)
+    use_web = needs_web_search(user_query) if not docs_are_relevant(documents) else False
 
     # Step 3: Web search if needed
     if use_web:
