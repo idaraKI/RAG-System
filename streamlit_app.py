@@ -11,7 +11,7 @@ load_dotenv()
 
 
 # --- decide if internal docs are relevant ---
-def docs_are_relevant(query: str, documents: list[str]) -> bool:
+def docs_are_relevant(documents: list[str]) -> bool:
     """Simple heuristic: docs are relevant if they have enough text."""
     if not documents:
         return False
