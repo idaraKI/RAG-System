@@ -18,7 +18,7 @@ if not TAVILY_API_KEY:
 
 tavily_client = TavilyClient(api_key=TAVILY_API_KEY)
 
-# --- Intent Classifier ---
+# --- INTENT CLASSIFIER ---
 def classify_query_intent(query: str) -> str:
     """
     Returns: INTERNAL | PUBLIC | GENERAL
@@ -50,7 +50,7 @@ INTERNAL, PUBLIC, or GENERAL
 
     return response.content.strip().upper()
 
-# --- Tavily web search ---
+# --- TAVILY WEB SEARCH ---
 def tavily_web_search(query: str, max_results: int = 5) -> list[str]:
     response = tavily_client.search(
         query=query,
@@ -66,19 +66,19 @@ def tavily_web_search(query: str, max_results: int = 5) -> list[str]:
     return documents
 
 
-# --- Streamlit UI ---
+# --- STREAMLIT UI ---
 st.set_page_config(page_title="Rayda RAG System", layout="wide")
 st.image("assets/rayda_logo.png", width=60)
 st.title("Rayda RAG System")
 st.write("Ask any question based on Rayda's internal documents.")
 
-# --- Ingestion Check ---
+# --- INGESTION CHECK ---
 if not os.path.exists(PERSIST_DIR) or not os.listdir(PERSIST_DIR):
     st.info("No vector store found. Running ingestion pipeline...")
     run_ingestion_pipeline()
     st.success("Ingestion completed!")
 
-# --- Load Vector Store ---
+# --- LOAD VECTOR STORE ---
 embedding_model = OpenAIEmbeddings(model="text-embedding-3-small")
 db = Chroma(
     persist_directory=PERSIST_DIR,
@@ -88,11 +88,14 @@ db = Chroma(
 retriever = db.as_retriever(search_kwargs={"k": 7})
 
 
-# --- Session state ---
+# --- SESSION STATE ---
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# --- Sidebar ---
+if "prefill_input" not in st.session_state:
+    st.session_state.prefill_input = ""
+
+# --- SIDEBAR ---
 st.sidebar.image("assets/rayda_logo.png", width=60)
 st.sidebar.title("Sample Questions")
 
@@ -102,15 +105,20 @@ sample_questions = [
     "How does Rayda manage company assets?",
     "What documents are stored in the Fixed Asset Document Manager?",
     "How are devices approved and delivered at Rayda?",
-    "What happens to devices at end of life?"
+    "What happens to devices at end of life?",
+    "What is Rayda’s LinkedIn follower count?",
+    "Has Rayda been mentioned in the news recently?",
 ]
 
-if st.sidebar.button("Use a sample question"):
-    st.session_state["prefill"] = st.sidebar.radio(
-        "Pick one:", sample_questions
-    )
+selected_question = st.sidebar.radio(
+    "Try one of these:",
+    sample_questions
+)
 
-# --- Display chat history ---
+if st.sidebar.button("Use this sample question"):
+    st.session_state.prefill_input = selected_question
+
+# --- DISPLAY CHAT HISTORY ---
 for msg in st.session_state.messages:
     with st.chat_message(msg["role"]):
         st.write(msg["content"])
@@ -118,18 +126,24 @@ for msg in st.session_state.messages:
 # --- Chat input ---
 user_query = st.chat_input("Ask a question about Rayda...")
 
+# --- INJECT SAMPLE QUESTIONS ---
+if not user_query and st.session_state.prefill_input:
+    user_query = st.session_state.prefill_input
+    st.session_state.prefill_input = ""
+
+# --- MAIN LOGIC ---
 if user_query:
     st.session_state.messages.append({"role": "user", "content": user_query})
     with st.chat_message("user"):
         st.write(user_query)
 
-    # --- Step 1: Intent classification ---
+    # --- STEP 1: INTENT CLASSIFICATION ---
     intent = classify_query_intent(user_query)
 
     documents = []
     source_type = ""
 
-   # --- Step 2: Route by intent ---
+   # --- STEP 2: ROUTE BY INTENT ---
     if intent == "INTERNAL":
         docs = retriever.invoke(user_query)
         documents = [doc.page_content for doc in docs]
@@ -143,7 +157,7 @@ if user_query:
     else:  # GENERAL
         source_type = "General knowledge"
 
-   # --- Step 3: Build prompt ---
+   # --- STEP 3: BUILD PROMPT ---
     combined_input = f"""
 You are a helpful assistant supporting Rayda.
 
@@ -164,7 +178,7 @@ CONTENT:
 {chr(10).join([f"- {doc}" for doc in documents])}
 """
 
-    # --- Step 4: Answer ---
+    # --- STEP 4: ANSWER ---
     model = ChatOpenAI(model="gpt-4o")
 
     with st.spinner("Generating answer..."):
