@@ -5,4 +5,4 @@ langchain-openai
 langchain-community
 langchain-chroma
 chromadb
-ddgs
+Tavily

@@ -4,29 +4,33 @@ from langchain_chroma import Chroma
 from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 from langchain_core.messages import HumanMessage, SystemMessage
 from dotenv import load_dotenv
-from langchain_community.utilities import DuckDuckGoSearchAPIWrapper
+from tavily import TavilyClient
 from ingestion_pipeline import run_ingestion_pipeline, PERSIST_DIR
 
 load_dotenv()
 
-# -------------------------------
-# LLM-based intent classifier
-# -------------------------------
+OPENAI_MODEL = "gpt-4o"
+TAVILY_API_KEY = os.getenv("TAVILY_API_KEY")
+
+if not TAVILY_API_KEY:
+    st.error("TAVILY_API_KEY is missing in your .env file")
+    st.stop()
+
+tavily_client = TavilyClient(api_key=TAVILY_API_KEY)
+
+# --- Intent Classifier ---
 def classify_query_intent(query: str) -> str:
     """
-    Returns one of:
-    - INTERNAL
-    - PUBLIC
-    - GENERAL
+    Returns: INTERNAL | PUBLIC | GENERAL
     """
     prompt = f"""
 Classify the user's question into ONE category.
 
 INTERNAL:
-- Company internal processes, policies, operations, documents
+- Rayda internal processes, policies, operations, internal documents
 
 PUBLIC:
-- Social media, follower counts, news, press, public announcements
+- Rayda social media, follower counts, news, press, public announcements
 
 GENERAL:
 - General knowledge not specific to Rayda
@@ -34,33 +38,47 @@ GENERAL:
 Question:
 {query}
 
-Answer with ONLY one word:
+Answer with ONLY ONE WORD:
 INTERNAL, PUBLIC, or GENERAL
 """
-    model = ChatOpenAI(model="gpt-4o")
+
+    model = ChatOpenAI(model=OPENAI_MODEL)
     response = model.invoke([
         SystemMessage(content="You classify user intent."),
         HumanMessage(content=prompt),
     ])
+
     return response.content.strip().upper()
 
+# --- Tavily web search ---
+def tavily_web_search(query: str, max_results: int = 5) -> list[str]:
+    response = tavily_client.search(
+        query=query,
+        max_results=max_results
+    )
 
-# -------------------------------
-# Streamlit UI
-# -------------------------------
+    documents = []
+    for r in response.get("results", []):
+        content = r.get("content")
+        if content:
+            documents.append(content)
+
+    return documents
+
+
+# --- Streamlit UI ---
 st.set_page_config(page_title="Rayda RAG System", layout="wide")
 st.image("assets/rayda_logo.png", width=60)
 st.title("Rayda RAG System")
 st.write("Ask any question based on Rayda's internal documents.")
 
-# -------------------------------
-# Vector store bootstrapping
-# -------------------------------
+# --- Ingestion Check ---
 if not os.path.exists(PERSIST_DIR) or not os.listdir(PERSIST_DIR):
     st.info("No vector store found. Running ingestion pipeline...")
     run_ingestion_pipeline()
     st.success("Ingestion completed!")
 
+# --- Load Vector Store ---
 embedding_model = OpenAIEmbeddings(model="text-embedding-3-small")
 db = Chroma(
     persist_directory=PERSIST_DIR,
@@ -69,17 +87,12 @@ db = Chroma(
 
 retriever = db.as_retriever(search_kwargs={"k": 7})
 
-duckduckgo_search = DuckDuckGoSearchAPIWrapper()
 
-# -------------------------------
-# Session state
-# -------------------------------
+# --- Session state ---
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# -------------------------------
-# Sidebar
-# -------------------------------
+# --- Sidebar ---
 st.sidebar.image("assets/rayda_logo.png", width=60)
 st.sidebar.title("Sample Questions")
 
@@ -97,16 +110,12 @@ if st.sidebar.button("Use a sample question"):
         "Pick one:", sample_questions
     )
 
-# -------------------------------
-# Display chat history
-# -------------------------------
+# --- Display chat history ---
 for msg in st.session_state.messages:
     with st.chat_message(msg["role"]):
         st.write(msg["content"])
 
-# -------------------------------
-# Chat input
-# -------------------------------
+# --- Chat input ---
 user_query = st.chat_input("Ask a question about Rayda...")
 
 if user_query:
@@ -114,34 +123,27 @@ if user_query:
     with st.chat_message("user"):
         st.write(user_query)
 
-    # -------------------------------
-    # Step 1: Intent classification
-    # -------------------------------
+    # --- Step 1: Intent classification ---
     intent = classify_query_intent(user_query)
 
     documents = []
     source_type = ""
 
-    # -------------------------------
-    # Step 2: Route by intent
-    # -------------------------------
-    if intent == "PUBLIC":
-        st.info("Searching the web using DuckDuckGo...")
-        web_results = duckduckgo_search.run(user_query)
-        documents = [r.strip() for r in web_results.split("\n") if r.strip()]
-        source_type = "public web sources"
-
-    elif intent == "INTERNAL":
+   # --- Step 2: Route by intent ---
+    if intent == "INTERNAL":
         docs = retriever.invoke(user_query)
         documents = [doc.page_content for doc in docs]
         source_type = "Rayda internal documents"
 
-    else:  # GENERAL
-        source_type = "general knowledge"
+    elif intent == "PUBLIC":
+        st.info("Searching the web ...")
+        documents = tavily_web_search(user_query)
+        source_type = "Public web sources (Tavily)"
 
-    # -------------------------------
-    # Step 3: Build prompt
-    # -------------------------------
+    else:  # GENERAL
+        source_type = "General knowledge"
+
+   # --- Step 3: Build prompt ---
     combined_input = f"""
 You are a helpful assistant supporting Rayda.
 
@@ -162,9 +164,7 @@ CONTENT:
 {chr(10).join([f"- {doc}" for doc in documents])}
 """
 
-    # -------------------------------
-    # Step 4: Answer
-    # -------------------------------
+    # --- Step 4: Answer ---
     model = ChatOpenAI(model="gpt-4o")
 
     with st.spinner("Generating answer..."):
